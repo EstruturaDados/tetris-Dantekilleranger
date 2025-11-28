@@ -1,0 +1,22 @@
+# Configurações locais do VSCode
+.vscode/
+
+# Histórico e cache
+.history/
+*.log
+
+# Arquivos temporários do sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos de ambiente (senhas, tokens, configs locais)
+.env
+
+# Dependências (se for projeto Node.js)
+node_modules/
+
+# Pastas de build/compilação
+dist/
+build/
+out/
+tetris

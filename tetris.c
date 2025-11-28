@@ -9,78 +9,99 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define TAM 5   // tamanho fixo da fila circular
+#define TAM_FILA 5   // tamanho fixo da fila
+#define TAM_PILHA 3  // capacidade máxima da pilha
 
-// Estrutura que representa uma peça do Tetris
-typedef struct {
-    int id;     // identificador único
-    char nome;  // tipo da peça (I, O, T, L)
-} Peca;
+// ---------------------------
+// Estruturas de dados
+// ---------------------------
+int fila[TAM_FILA];   // fila de peças
+int pilha[TAM_PILHA]; // pilha de reserva
+int topo = -1;        // índice do topo da pilha
 
-// Estrutura da fila circular
-typedef struct {
-    Peca fila[TAM]; // array fixo de peças
-    int front;      // índice da frente (primeiro elemento)
-    int rear;       // índice do final (último elemento)
-    int count;      // quantidade atual de elementos na fila
-} FilaCircular;
+// ---------------------------
+// Funções auxiliares
+// ---------------------------
 
-int idGlobal = 1; // contador global para gerar IDs únicos
-
-// Função que gera uma peça automaticamente
-Peca gerarPeca() {
-    char tipos[] = {'I', 'O', 'T', 'L'}; // tipos possíveis
-    Peca p;
-    p.id = idGlobal++;                   // gera ID único
-    p.nome = tipos[rand() % 4];          // escolhe tipo aleatório
-    return p;
+// Gera uma peça aleatória (simulação)
+int gerarPeca() {
+    return rand() % 7 + 1; // peças numeradas de 1 a 7
 }
 
-// Inicializa a fila com 5 peças
-void inicializarFila(FilaCircular *f) {
-    f->front = 0;
-    f->rear = -1;
-    f->count = 0;
-    for (int i = 0; i < TAM; i++) {
-        f->rear = (f->rear + 1) % TAM;   // move o rear circularmente
-        f->fila[f->rear] = gerarPeca();  // insere peça
-        f->count++;
+// Inicializa a fila com peças
+void inicializarFila() {
+    for (int i = 0; i < TAM_FILA; i++) {
+        fila[i] = gerarPeca();
     }
 }
 
-// Remove peça da frente da fila (dequeue)
-void dequeue(FilaCircular *f) {
-    if (f->count == 0) {
-        printf("Fila vazia!\n");
-        return;
+// Exibe estado atual da fila e pilha
+void mostrarEstado() {
+    printf("\nFila: ");
+    for (int i = 0; i < TAM_FILA; i++) {
+        printf("[%d] ", fila[i]);
     }
-    Peca removida = f->fila[f->front];   // pega peça da frente
-    printf("Jogou a peça: ID=%d Tipo=%c\n", removida.id, removida.nome);
-    f->front = (f->front + 1) % TAM;     // avança a frente circularmente
-    f->count--;
-}
 
-// Insere nova peça no final da fila (enqueue)
-void enqueue(FilaCircular *f) {
-    if (f->count == TAM) {
-        printf("Fila cheia!\n");
-        return;
-    }
-    f->rear = (f->rear + 1) % TAM;       // move o rear circularmente
-    f->fila[f->rear] = gerarPeca();      // insere nova peça
-    f->count++;
-}
-
-// Mostra o estado atual da fila
-void mostrarFila(FilaCircular *f) {
-    printf("\nFila Atual:\n");
-    int i = f->front;
-    for (int j = 0; j < f->count; j++) {
-        printf("Pos %d -> ID=%d Tipo=%c\n", j, f->fila[i].id, f->fila[i].nome);
-        i = (i + 1) % TAM; // avança circularmente
+    printf("\nPilha: ");
+    if (topo == -1) {
+        printf("(vazia)");
+    } else {
+        for (int i = 0; i <= topo; i++) {
+            printf("[%d] ", pilha[i]);
+        }
     }
     printf("\n");
 }
+
+// ---------------------------
+// Operações da fila
+// ---------------------------
+
+// Remove peça da frente da fila e insere nova no fim
+int jogarPeca() {
+    int peca = fila[0]; // pega a peça da frente
+
+    // desloca elementos para frente
+    for (int i = 0; i < TAM_FILA - 1; i++) {
+        fila[i] = fila[i + 1];
+    }
+
+    // insere nova peça no fim
+    fila[TAM_FILA - 1] = gerarPeca();
+
+    return peca;
+}
+
+// ---------------------------
+// Operações da pilha
+// ---------------------------
+
+// Push: reserva peça da fila
+void reservarPeca() {
+    if (topo == TAM_PILHA - 1) {
+        printf("\nPilha cheia! Não é possível reservar mais peças.\n");
+        return;
+    }
+
+    int peca = jogarPeca(); // remove da fila
+    pilha[++topo] = peca;   // insere na pilha
+    printf("\nPeça %d reservada!\n", peca);
+}
+
+// Pop: usa peça da pilha
+void usarReservada() {
+    if (topo == -1) {
+        printf("\nPilha vazia! Não há peças reservadas.\n");
+        return;
+    }
+
+    int peca = pilha[topo--]; // remove do topo
+    printf("\nUsando peça reservada: %d\n", peca);
+}
+
+// ---------------------------
+// Programa principal
+// ---------------------------
 
 int main()
 {
@@ -125,43 +146,40 @@ int main()
     //      4 - Trocar peça da frente com topo da pilha
     //      5 - Trocar 3 primeiros da fila com os 3 da pilha
 
-    srand(time(NULL)); // inicializa gerador de números aleatórios
-    FilaCircular fila;
-    inicializarFila(&fila); // começa com 5 peças
+    srand(time(NULL)); // inicializa gerador aleatório
+    inicializarFila();
 
     int opcao;
     do {
-        printf("Menu:\n");
-        printf("1 - Jogar peça (dequeue)\n");
-        printf("2 - Inserir nova peça (enqueue)\n");
-        printf("3 - Visualizar fila\n");
+        mostrarEstado();
+        printf("\nMenu:\n");
+        printf("1 - Jogar peça\n");
+        printf("2 - Reservar peça\n");
+        printf("3 - Usar peça reservada\n");
         printf("0 - Sair\n");
         printf("Escolha: ");
         scanf("%d", &opcao);
 
-        switch(opcao) {
-            case 1:
-                // remove peça da frente e insere nova automaticamente
-                dequeue(&fila);
-                enqueue(&fila); // mantém sempre 5 peças
-                mostrarFila(&fila);
+        switch (opcao) {
+            case 1: {
+                int peca = jogarPeca();
+                printf("\nJogando peça: %d\n", peca);
                 break;
+            }
             case 2:
-                // insere nova peça manualmente
-                enqueue(&fila);
-                mostrarFila(&fila);
+                reservarPeca();
                 break;
             case 3:
-                // mostra estado atual da fila
-                mostrarFila(&fila);
+                usarReservada();
                 break;
             case 0:
-                printf("Saindo...\n");
+                printf("\nSaindo do jogo...\n");
                 break;
             default:
-                printf("Opção inválida!\n");
+                printf("\nOpção inválida!\n");
         }
-    } while(opcao != 0);
+    } while (opcao != 0);
 
     return 0;
 }
+
